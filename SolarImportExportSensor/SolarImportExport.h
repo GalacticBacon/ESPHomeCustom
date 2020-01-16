@@ -1,7 +1,7 @@
 #include "esphome.h"
 class SolarImportExport : public PollingComponent {
  public:
- //User Variable
+ //****************User Variable*******************
   // Input Pin of the Pulse Sensor for total power
   const int totalUsagePin = 5; 
   // Input Pin of the Pulse Sensor for import power
@@ -54,22 +54,26 @@ class SolarImportExport : public PollingComponent {
       totalUsagePinLastState = false;
       //falling edge event
       totalUsagePinFallingEdge = true;
+      ESP_LOGD("custom", "Total Usage Falling Event");
     }
     if (digitalRead(totalUsagePin) == HIGH && !totalUsagePinLastState) {
       totalUsagePinLastState = true;
       //rising edge event
       totalUsagePinRisingEdge = true;
+      ESP_LOGD("custom", "Total Usage Rising Event");
     }
     //power import section
     if (digitalRead(importPin) == LOW && importPinLastState) {
       importPinLastState = false;
       //falling edge event
       importPinFallingEdge = true;
+      ESP_LOGD("custom", "Import Usage Falling Event");
     }
     if (digitalRead(importPin) == HIGH && !importPinLastState) {
       importPinLastState = true;
       //rising edge event
       importPinRisingEdge = true;
+      ESP_LOGD("custom", "Import Usage Rising Event");
     }
 // *******Mapping********
     //Changes Pointers to Falling Edge if useFallingEdge is true
