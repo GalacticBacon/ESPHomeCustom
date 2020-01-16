@@ -14,6 +14,8 @@ class SolarImportExport : public PollingComponent {
   const unsigned int pulsesPerKW = 1000;
   // Prefer input data over total data
   const bool preferInputData = true; 
+  // Rising or Falling Edge
+  const bool useFallingEdge = true;
 
   // constructors
   //Runs at the debounce freq
@@ -36,12 +38,17 @@ class SolarImportExport : public PollingComponent {
   }
 
   void update() override {
+//*******Processing Logic*******
     //create new vars for each loop
     //these are updated on a state change either on the rising edge or falling edge of a pulse
     bool totalUsagePinFallingEdge = false;
     bool totalUsagePinRisingEdge = false;
     bool importPinFallingEdge = false;
     bool importPinRisingEdge = false;
+    //Defaults pointers to Rising Edge
+    bool *totalUsagePinEvent = &totalUsagePinRisingEdge;
+    bool *importPinEvent = &importPinRisingEdge;
+
     //logic for reading each pin change event
     if (digitalRead(totalUsagePin) == LOW && totalUsagePinLastState) {
       totalUsagePinLastState = false;
@@ -64,17 +71,23 @@ class SolarImportExport : public PollingComponent {
       //rising edge event
       importPinRisingEdge = true;
     }
+// *******Mapping********
+    //Changes Pointers to Falling Edge if useFallingEdge is true
+    if (useFallingEdge) {
+      totalUsagePinEvent = &totalUsagePinFallingEdge;
+      importPinEvent = &importPinFallingEdge;
+    }
 
-
-    if (totalUsagePinFallingEdge && importPinFallingEdge){
+// *******Output Logic********
+    if (totalUsagePinEvent && importPinEvent) {
       //this is an grid import event
       gridImportCounter++;
     }
-    else if (totalUsagePinFallingEdge && !importPinFallingEdge){
+    else if (totalUsagePinEvent && !importPinEvent) {
       //this is an grid export event
       solarExportCounter++;
     }
-    else if (!totalUsagePinFallingEdge && importPinFallingEdge){
+    else if (!totalUsagePinEvent && importPinEvent) {
       //this should never occur - catch error and log output
       if (preferInputData){
         //accept as an import event
@@ -85,11 +98,11 @@ class SolarImportExport : public PollingComponent {
 
     //publish data and reset counters
     //converts publishInterval to ms
-    if (timeCounter * debounceInterval >= publishInterval * 1000){
+    if (timeCounter * debounceInterval >= publishInterval * 1000) {
       //publish data in KWh units
       solar_export_sensor -> publish_state((solarExportCounter * publishInterval) / pulsesPerKW);
       grid_import_sensor -> publish_state((gridImportCounter * publishInterval) / pulsesPerKW);
-      total_power_consumption_sensor -> publish_state((totalPowerConsumptionCounter * publishInterval) / pulsesPerKW);
+      // ######### total_power_consumption_sensor -> publish_state((totalPowerConsumptionCounter * publishInterval) / pulsesPerKW);
       //reset counters after publish
       solarExportCounter = 0;
       gridImportCounter = 0;
