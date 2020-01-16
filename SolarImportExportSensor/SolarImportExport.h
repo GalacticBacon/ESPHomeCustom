@@ -91,7 +91,7 @@ class SolarImportExport : public PollingComponent {
     else if (totalUsagePinEvent && !importPinEvent) {
       //this is an grid export event
       solarExportCounter++;
-      ESP_LOGD("custom", "Export Event, Count is: %i", gridExportCounter);
+      ESP_LOGD("custom", "Export Event, Count is: %i", solarExportCounter);
     }
     else if (!totalUsagePinEvent && importPinEvent) {
       //this should never occur - catch error and log output
@@ -116,6 +116,6 @@ class SolarImportExport : public PollingComponent {
       totalPowerConsumptionCounter = 0;
       timeCounter = 0;
     }
-    timeCounter++
+    timeCounter++;
   }
 };
