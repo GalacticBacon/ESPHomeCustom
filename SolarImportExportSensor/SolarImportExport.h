@@ -22,7 +22,7 @@ class SolarImportExport : public PollingComponent {
   SolarImportExport() : PollingComponent(debounceInterval) {}
   Sensor *solar_export_sensor = new Sensor();
   Sensor *grid_import_sensor = new Sensor();
-  Sensor *total_power_consumption_sensor = new Sensor();
+  //########Sensor *total_power_consumption_sensor = new Sensor();
 
   //Global Variables
   bool totalUsagePinLastState = false;
