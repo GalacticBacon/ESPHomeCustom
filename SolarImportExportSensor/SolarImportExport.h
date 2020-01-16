@@ -86,12 +86,12 @@ class SolarImportExport : public PollingComponent {
     if (totalUsagePinEvent && importPinEvent) {
       //this is an grid import event
       gridImportCounter++;
-      ESP_LOGD("custom", "Import Event, Count is: %f", gridImportCounter);
+      ESP_LOGD("custom", "Import Event, Count is: %i", gridImportCounter);
     }
     else if (totalUsagePinEvent && !importPinEvent) {
       //this is an grid export event
       solarExportCounter++;
-      ESP_LOGD("custom", "Export Event, Count is: %f", gridExportCounter);
+      ESP_LOGD("custom", "Export Event, Count is: %i", gridExportCounter);
     }
     else if (!totalUsagePinEvent && importPinEvent) {
       //this should never occur - catch error and log output
@@ -99,7 +99,7 @@ class SolarImportExport : public PollingComponent {
         //accept as an import event
         gridImportCounter++;
       }
-      ESP_LOGD("custom", "Incorrect Import Event, Count is: %f", gridImportCounter);
+      ESP_LOGD("custom", "Incorrect Import Event, Count is: %i", gridImportCounter);
     }
     //counter for time & pulse count for publish logic
 
