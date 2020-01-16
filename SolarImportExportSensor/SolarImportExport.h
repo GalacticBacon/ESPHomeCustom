@@ -3,9 +3,9 @@ class SolarImportExport : public PollingComponent {
  public:
  //****************User Variable*******************
   // Input Pin of the Pulse Sensor for total power
-  const int totalUsagePin = 5; 
+  const int totalUsagePin = 26; 
   // Input Pin of the Pulse Sensor for import power
-  const int importPin = 6; 
+  const int importPin = 25; 
   // Update/Publish time in Seconds
   const int publishInterval = 60;
   // debounce in ms
@@ -86,10 +86,12 @@ class SolarImportExport : public PollingComponent {
     if (totalUsagePinEvent && importPinEvent) {
       //this is an grid import event
       gridImportCounter++;
+      ESP_LOGD("custom", "Import Event, Count is: %f", gridImportCounter);
     }
     else if (totalUsagePinEvent && !importPinEvent) {
       //this is an grid export event
       solarExportCounter++;
+      ESP_LOGD("custom", "Export Event, Count is: %f", gridExportCounter);
     }
     else if (!totalUsagePinEvent && importPinEvent) {
       //this should never occur - catch error and log output
@@ -97,6 +99,7 @@ class SolarImportExport : public PollingComponent {
         //accept as an import event
         gridImportCounter++;
       }
+      ESP_LOGD("custom", "Incorrect Import Event, Count is: %f", gridImportCounter);
     }
     //counter for time & pulse count for publish logic
 
