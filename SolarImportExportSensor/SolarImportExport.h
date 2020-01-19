@@ -16,6 +16,10 @@ class SolarImportExport : public PollingComponent {
   const bool preferInputData = true; 
   // Rising or Falling Edge
   const bool useFallingEdge = true;
+  // How many samples for debouncing
+  const int debounceSampleSize = 4;
+  // How many true samples to accept input
+  const int debounceMinTrue = 3;
 
   // constructors
   //Runs at the debounce freq
@@ -34,7 +38,6 @@ class SolarImportExport : public PollingComponent {
   int debounceSampleCounter = 0;
   int debounceTotalCounter = 0;
   int debounceImportCounter = 0;
-  int debounceSampleSize = 4;
 
   void setup() override {
     ESP_LOGD("custom", "Setup Starting");
@@ -53,6 +56,7 @@ class SolarImportExport : public PollingComponent {
     //Defaults pointers to Rising Edge
     bool *totalUsagePinEvent = &totalUsagePinRisingEdge;
     bool *importPinEvent = &importPinRisingEdge;
+    // Looking for new events
     if (!debounceSampleCounter){
       //logic for reading each pin change event
       if (digitalRead(totalUsagePin) == LOW && totalUsagePinLastState) {
@@ -107,26 +111,30 @@ class SolarImportExport : public PollingComponent {
       debounceSampleCounter++;
     }
     else if (debounceSampleCounter == debounceSampleSize){
-      debounceSampleCounter = 0;
-    }
+   
 // *******Output Logic********
-    if (*totalUsagePinEvent && *importPinEvent) {
-      //this is an grid import event
-      gridImportCounter++;
-      ESP_LOGD("custom", "Import Event, Count is: %i", gridImportCounter);
-    }
-    else if (*totalUsagePinEvent && !*importPinEvent) {
-      //this is an grid export event
-      solarExportCounter++;
-      ESP_LOGD("custom", "Export Event, Count is: %i", solarExportCounter);
-    }
-    else if (!*totalUsagePinEvent && *importPinEvent) {
-      //this should never occur - catch error and log output
-      if (preferInputData){
-        //accept as an import event
+      if ((debounceTotalCounter >= debounceMinTrue) && (debounceImportCounter >= debounceMinTrue)) {
+        //this is an grid import event
         gridImportCounter++;
+        ESP_LOGD("custom", "Import Event, Count is: %i", gridImportCounter);
       }
-      ESP_LOGD("custom", "Incorrect Import Event, Count is: %i", gridImportCounter);
+      else if ((debounceTotalCounter >= debounceMinTrue) && (debounceImportCounter < debounceMinTrue)) {
+        //this is an grid export event
+        solarExportCounter++;
+        ESP_LOGD("custom", "Export Event, Count is: %i", solarExportCounter);
+      }
+      else if ((debounceTotalCounter < debounceMinTrue) && (debounceImportCounter >= debounceMinTrue)) {
+        //this should never occur - catch error and log output
+        if (preferInputData){
+          //accept as an import event
+          gridImportCounter++;
+        }
+        ESP_LOGD("custom", "Incorrect Import Event, Count is: %i", gridImportCounter);
+      }
+      debounceSampleCounter = 0;
+      debounceImportCounter = 0;
+      debounceTotalCounter = 0;
+
     }
     //counter for time & pulse count for publish logic
 
