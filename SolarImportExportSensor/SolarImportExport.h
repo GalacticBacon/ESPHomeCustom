@@ -19,7 +19,7 @@ class SolarImportExport : public PollingComponent {
 
   // constructors
   //Runs at the debounce freq
-  SolarImportExport() : PollingComponent(debounceInterval) {}
+  SolarImportExport() : PollingComponent(150) { }
   Sensor *solar_export_sensor = new Sensor();
   Sensor *grid_import_sensor = new Sensor();
   //########Sensor *total_power_consumption_sensor = new Sensor();
@@ -31,16 +31,21 @@ class SolarImportExport : public PollingComponent {
   int gridImportCounter = 0;
   int totalPowerConsumptionCounter = 0;
   int timeCounter = 0;
+  int debounceSampleCounter = 0;
+  int debounceTotalCounter = 0;
+  int debounceImportCounter = 0;
+  int debounceSampleSize = 4;
 
   void setup() override {
+    ESP_LOGD("custom", "Setup Starting");
     pinMode(totalUsagePin, INPUT);
     pinMode(importPin, INPUT);
   }
 
   void update() override {
 //*******Processing Logic*******
-    //create new vars for each loop
-    //these are updated on a state change either on the rising edge or falling edge of a pulse
+      //create new vars for each loop
+      //these are updated on a state change either on the rising edge or falling edge of a pulse
     bool totalUsagePinFallingEdge = false;
     bool totalUsagePinRisingEdge = false;
     bool importPinFallingEdge = false;
@@ -48,52 +53,74 @@ class SolarImportExport : public PollingComponent {
     //Defaults pointers to Rising Edge
     bool *totalUsagePinEvent = &totalUsagePinRisingEdge;
     bool *importPinEvent = &importPinRisingEdge;
-
-    //logic for reading each pin change event
-    if (digitalRead(totalUsagePin) == LOW && totalUsagePinLastState) {
-      totalUsagePinLastState = false;
-      //falling edge event
-      totalUsagePinFallingEdge = true;
-      ESP_LOGD("custom", "Total Usage Falling Event");
-    }
-    if (digitalRead(totalUsagePin) == HIGH && !totalUsagePinLastState) {
-      totalUsagePinLastState = true;
-      //rising edge event
-      totalUsagePinRisingEdge = true;
-      ESP_LOGD("custom", "Total Usage Rising Event");
-    }
-    //power import section
-    if (digitalRead(importPin) == LOW && importPinLastState) {
-      importPinLastState = false;
-      //falling edge event
-      importPinFallingEdge = true;
-      ESP_LOGD("custom", "Import Usage Falling Event");
-    }
-    if (digitalRead(importPin) == HIGH && !importPinLastState) {
-      importPinLastState = true;
-      //rising edge event
-      importPinRisingEdge = true;
-      ESP_LOGD("custom", "Import Usage Rising Event");
-    }
+    if (!debounceSampleCounter){
+      //logic for reading each pin change event
+      if (digitalRead(totalUsagePin) == LOW && totalUsagePinLastState) {
+        totalUsagePinLastState = false;
+        //falling edge event
+        totalUsagePinFallingEdge = true;
+        ESP_LOGD("custom", "Total Usage Falling Event");
+      }
+      if (digitalRead(totalUsagePin) == HIGH && !totalUsagePinLastState) {
+        totalUsagePinLastState = true;
+        //rising edge event
+        totalUsagePinRisingEdge = true;
+        ESP_LOGD("custom", "Total Usage Rising Event");
+      }
+      //power import section
+      if (digitalRead(importPin) == LOW && importPinLastState) {
+        importPinLastState = false;
+        //falling edge event
+        importPinFallingEdge = true;
+        ESP_LOGD("custom", "Import Usage Falling Event");
+      }
+      if (digitalRead(importPin) == HIGH && !importPinLastState) {
+        importPinLastState = true;
+        //rising edge event
+        importPinRisingEdge = true;
+        ESP_LOGD("custom", "Import Usage Rising Event");
+      }
 // *******Mapping********
     //Changes Pointers to Falling Edge if useFallingEdge is true
-    if (useFallingEdge) {
-      totalUsagePinEvent = &totalUsagePinFallingEdge;
-      importPinEvent = &importPinFallingEdge;
+      if (useFallingEdge) {
+        totalUsagePinEvent = &totalUsagePinFallingEdge;
+        importPinEvent = &importPinFallingEdge;
+      }
+// *******Debounce Logic********
+      if (*totalUsagePinEvent || *importPinEvent) {
+      //Begin debounce sample interval
+      debounceTotalCounter += *totalUsagePinEvent;
+      debounceImportCounter += *importPinEvent;
+      debounceSampleCounter++;
+      }
     }
-
+// *******Debounce Logic********
+    else if ((debounceSampleCounter < debounceSampleSize) && debounceSampleCounter){
+      if (useFallingEdge){
+        if (importPin == LOW){debounceImportCounter++;}
+        if (totalUsagePin == LOw){debounceTotalCounter++;}
+      }
+      else if (useFallingEdge){
+        if (importPin == HIGH){debounceImportCounter++;}
+        if (totalUsagePin == HIGH){debounceTotalCounter++;}
+      }
+      debounceSampleCounter++;
+    }
+    else if (debounceSampleCounter == debounceSampleSize){
+      debounceSampleCounter = 0;
+    }
 // *******Output Logic********
-    if (totalUsagePinEvent && importPinEvent) {
+    if (*totalUsagePinEvent && *importPinEvent) {
       //this is an grid import event
       gridImportCounter++;
       ESP_LOGD("custom", "Import Event, Count is: %i", gridImportCounter);
     }
-    else if (totalUsagePinEvent && !importPinEvent) {
+    else if (*totalUsagePinEvent && !*importPinEvent) {
       //this is an grid export event
       solarExportCounter++;
       ESP_LOGD("custom", "Export Event, Count is: %i", solarExportCounter);
     }
-    else if (!totalUsagePinEvent && importPinEvent) {
+    else if (!*totalUsagePinEvent && *importPinEvent) {
       //this should never occur - catch error and log output
       if (preferInputData){
         //accept as an import event
