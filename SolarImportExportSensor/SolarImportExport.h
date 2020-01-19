@@ -101,12 +101,20 @@ class SolarImportExport : public PollingComponent {
 // *******Debounce Logic********
     else if ((debounceSampleCounter < debounceSampleSize) && debounceSampleCounter){
       if (useFallingEdge){
-        if (importPin == LOW){debounceImportCounter++;}
-        if (totalUsagePin == LOw){debounceTotalCounter++;}
+        if (importPin == LOW){
+          debounceImportCounter++;
+          }
+        if (totalUsagePin == LOw){
+          debounceTotalCounter++;
+          }
       }
       else {
-        if (importPin == HIGH){debounceImportCounter++;}
-        if (totalUsagePin == HIGH){debounceTotalCounter++;}
+        if (importPin == HIGH){
+          debounceImportCounter++;
+          }
+        if (totalUsagePin == HIGH){
+          debounceTotalCounter++;
+          }
       }
       debounceSampleCounter++;
     }
