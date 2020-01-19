@@ -104,7 +104,7 @@ class SolarImportExport : public PollingComponent {
         if (importPin == LOW){debounceImportCounter++;}
         if (totalUsagePin == LOw){debounceTotalCounter++;}
       }
-      else if (!useFallingEdge){
+      else {
         if (importPin == HIGH){debounceImportCounter++;}
         if (totalUsagePin == HIGH){debounceTotalCounter++;}
       }
